@@ -27,14 +27,28 @@ const resultsWrapper = document.querySelector(".results");
 const onInput = debounce(async (e) => {
     const movies = await fetchData(e.target.value);
 
+    if (!movies.length) {
+        dropdown.classList.remove("is-active");
+        return;
+    }
+
+    resultsWrapper.innerHTML = "";
+    dropdown.classList.add("is-active");
     movies.forEach((movie) => {
-        const div = document.createElement("div");
-        div.innerHTML = `
-        <img src="${movie.Poster}" alt="poster de ${movie.Title}"/>
-        <h1>${movie.Title}</h1>
+        const option = document.createElement("a");
+        const imgSrc = movie.Poster === "N/A" ? "" : movie.Poster;
+
+        option.classList.add("dropdown-item");
+        option.innerHTML = `
+        <img src="${imgSrc}" alt="poster de ${movie.Title}"/>
+        ${movie.Title}
         `;
-        document.querySelector("#target").appendChild(div);
+        resultsWrapper.appendChild(option);
     });
 }, 1.5);
 
 input.addEventListener("input", onInput);
+
+document.addEventListener("click", (e) => {
+    !root.contains(e.target) && dropdown.classList.remove("is-active");
+});
