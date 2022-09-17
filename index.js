@@ -1,7 +1,4 @@
-createAutoComplete({
-    // racine pour afficher le contenu
-    root: document.querySelector(".autocomplete"),
-
+const autocompleteConfig = {
     // affiche les options après la recherche
     renderOption(movie) {
         const imgSrc = movie.Poster === "N/A" ? "" : movie.Poster;
@@ -9,11 +6,6 @@ createAutoComplete({
                 <img src="${imgSrc}" />
                 ${movie.Title} (${movie.Year})
             `;
-    },
-
-    // quand on select un film
-    onOptionSelect(movie) {
-        onMovieSelect(movie);
     },
 
     // le titre qui doit s'affiche dans l'input après le choix
@@ -33,17 +25,49 @@ createAutoComplete({
         if (response.data.Error) return [];
         return response.data.Search;
     },
+};
+
+createAutoComplete({
+    ...autocompleteConfig,
+    // racine pour afficher le contenu
+    root: document.querySelector("#left-autocomplete"),
+
+    // quand on select un film
+    onOptionSelect(movie) {
+        document.querySelector(".tutorial").classList.add("is-hidden");
+        onMovieSelect(movie, document.querySelector("#left-summary"), "left");
+    },
 });
 
-const onMovieSelect = async (movie) => {
-    const response = await axios.get("http://www.omdbapi.com/", {
+createAutoComplete({
+    ...autocompleteConfig,
+    // racine pour afficher le contenu
+    root: document.querySelector("#right-autocomplete"),
+
+    // quand on select un film
+    onOptionSelect(movie) {
+        document.querySelector(".tutorial").classList.add("is-hidden");
+        onMovieSelect(movie, document.querySelector("#right-summary"), "right");
+    },
+});
+
+const runComparaison = () => {};
+
+let leftMovie;
+let rightMovie;
+const onMovieSelect = async (movie, displayElement, side) => {
+    const res = await axios.get("http://www.omdbapi.com/", {
         params: {
             apikey: "be1446fd",
             i: movie.imdbID,
         },
     });
 
-    document.querySelector("#summary").innerHTML = movieTemplate(response.data);
+    displayElement.innerHTML = movieTemplate(res.data);
+
+    side === "left" ? (leftMovie = res.data) : (rightMovie = res.data);
+
+    leftMovie && rightMovie && runComparaison();
 };
 
 const movieTemplate = (movieDetail) => {
@@ -51,7 +75,7 @@ const movieTemplate = (movieDetail) => {
         <article class="media">
             <figure class="media-left">
                 <p class="image">
-                    <img src="${movieDetail.Poster} alt="poster de ${movieDetail.Title}"/>
+                    <img src="${movieDetail.Poster}" />
                 </p>
             </figure>
             <div class="media-content">
