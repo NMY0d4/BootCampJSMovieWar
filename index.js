@@ -1,54 +1,90 @@
-const fetchData = async (searchTerm) => {
+createAutoComplete({
+    // racine pour afficher le contenu
+    root: document.querySelector(".autocomplete"),
+
+    // affiche les options après la recherche
+    renderOption(movie) {
+        const imgSrc = movie.Poster === "N/A" ? "" : movie.Poster;
+        return `
+                <img src="${imgSrc}" />
+                ${movie.Title} (${movie.Year})
+            `;
+    },
+
+    // quand on select un film
+    onOptionSelect(movie) {
+        onMovieSelect(movie);
+    },
+
+    // le titre qui doit s'affiche dans l'input après le choix
+    inputValue(movie) {
+        return movie.Title;
+    },
+
+    // fonction asynchrone qui récupère les données dans l'API
+    async fetchData(searchTerm) {
+        const response = await axios.get("http://www.omdbapi.com/", {
+            params: {
+                apikey: "be1446fd",
+                s: searchTerm,
+            },
+        });
+
+        if (response.data.Error) return [];
+        return response.data.Search;
+    },
+});
+
+const onMovieSelect = async (movie) => {
     const response = await axios.get("http://www.omdbapi.com/", {
         params: {
             apikey: "be1446fd",
-            s: searchTerm,
+            i: movie.imdbID,
         },
     });
-    if (response.data.Error) return [];
-    return response.data.Search;
+
+    document.querySelector("#summary").innerHTML = movieTemplate(response.data);
 };
 
-const root = document.querySelector(".autocomplete");
-root.innerHTML = `
-<label><b>Search For a Movie</b></label>
-<input class="input" />
-<div class="dropdown">
-    <div class="dropdown-menu">
-        <div class="dropdown-content results"></div>
-    </div>
-</div>
-`;
+const movieTemplate = (movieDetail) => {
+    return `
+        <article class="media">
+            <figure class="media-left">
+                <p class="image">
+                    <img src="${movieDetail.Poster} alt="poster de ${movieDetail.Title}"/>
+                </p>
+            </figure>
+            <div class="media-content">
+                <div class="content">
+                    <h1>${movieDetail.Title}</h1>
+                    <h4>${movieDetail.Genre}</h4>
+                    <p>${movieDetail.Plot}</p>
+                </div>
+            </div>
+        </article>
+        <article class="notification is-primary">
+            <p class="title">${movieDetail.Awards}</p>
+            <p class="subtitle">Awards</p>
+        </article>
 
-const input = document.querySelector("input");
-const dropdown = document.querySelector(".dropdown");
-const resultsWrapper = document.querySelector(".results");
+        <article class="notification is-primary">
+            <p class="title">${movieDetail.BoxOffice}</p>
+            <p class="subtitle">Box Office</p>
+        </article>
 
-const onInput = debounce(async (e) => {
-    const movies = await fetchData(e.target.value);
+        <article class="notification is-primary">
+            <p class="title">${movieDetail.Metascore}</p>
+            <p class="subtitle">Metascore</p>
+        </article>
 
-    if (!movies.length) {
-        dropdown.classList.remove("is-active");
-        return;
-    }
+        <article class="notification is-primary">
+            <p class="title">${movieDetail.imdbRating}</p>
+            <p class="subtitle">IMDB Rating</p>
+        </article>
 
-    resultsWrapper.innerHTML = "";
-    dropdown.classList.add("is-active");
-    movies.forEach((movie) => {
-        const option = document.createElement("a");
-        const imgSrc = movie.Poster === "N/A" ? "" : movie.Poster;
-
-        option.classList.add("dropdown-item");
-        option.innerHTML = `
-        <img src="${imgSrc}" alt="poster de ${movie.Title}"/>
-        ${movie.Title}
-        `;
-        resultsWrapper.appendChild(option);
-    });
-}, 1.5);
-
-input.addEventListener("input", onInput);
-
-document.addEventListener("click", (e) => {
-    !root.contains(e.target) && dropdown.classList.remove("is-active");
-});
+        <article class="notification is-primary">
+            <p class="title">${movieDetail.imdbVotes}</p>
+            <p class="subtitle">IMDB Votes</p>
+        </article>
+    `;
+};
